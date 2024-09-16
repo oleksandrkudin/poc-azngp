@@ -17,6 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # At least two commits are required to get changed files from last commit.
           fetch-depth: ${{ inputs.GIT_BASE_REF == '' && 2 || 0 }}  # TODO: fix when add PR trigger
 
       - name: Get changed components
