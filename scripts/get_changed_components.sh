@@ -58,9 +58,10 @@ function parse_arguments () {
 
 function get_changed_files () {
   [ $# -gt 0 ] && local git_base_ref=$1
+  log_verbose "git_base_ref=$git_base_ref"
 
   log_verbose "Getting git changed files ..."
-  changed_files=$(git diff-tree --no-commit-id --name-only -r $(git log -1 --format='%H') ${git_base_ref})
+  changed_files=$(git diff-tree --no-commit-id --name-only -r $(git log -1 --format='%H'))
   log_verbose $changed_files
  
   echo "$changed_files"  # double quotes to output multi-line string
