@@ -14,6 +14,11 @@ jobs:
     outputs:
       components: ${{ steps.components.outputs.components }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ inputs.GIT_BASE_REF == '' && 1 || 0 }}  # TODO: fix when add PR trigger
+
       - name: Get changed components
         id: components
         env:
