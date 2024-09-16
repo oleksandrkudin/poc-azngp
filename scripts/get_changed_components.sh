@@ -57,7 +57,7 @@ function parse_arguments () {
 }
 
 function get_changed_files () {
-  local git_base_ref=$1
+  [ $# -gt 0 ] && local git_base_ref=$1
 
   log_verbose "Getting git changed files ..."
   changed_files=$(git diff-tree --no-commit-id --name-only -r $(git log -1 --format='%H') ${git_base_ref})
