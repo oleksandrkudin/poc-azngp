@@ -1,0 +1,44 @@
+name: build product
+
+on:
+  workflow_dispatch:
+    inputs:
+      GIT_BASE_REF:
+        description: Merge base branch to compare changes with. By default only single HEAD commit is analysed for changes.
+        default: ""
+
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      components: ${{ steps.components.outputs.components }}
+    steps:
+      - name: Get changed components
+        id: components
+        env:
+          GIT_BASE_REF: ${{ inputs.GIT_BASE_REF }}
+        run: |
+          components=$(scripts/track_component_run_required.sh ${GIT_BASE_REF:+--git-base-ref $GIT_BASE_REF} --verbose)
+          echo "components=$components" | jq --raw-input | jq --slurp | tee -a "$GITHUB_OUTPUT"
+  iac:
+    needs:
+      - changes
+    if: contains(needs.changes.outputs.components, 'iac')
+    uses: ./.github/workflows/build_component.yaml
+
+  connectivity:
+    needs:
+      - changes
+      - iac
+    # Run if needs (dependency) are succedeed or if dependencies are skipped but there are changes in component itself.
+    if: success() || (contains(needs.changes.outputs.components, 'connectivity') && needs.iac.result == 'skipped') 
+    uses: ./.github/workflows/build_component.yaml
+  
+  aks:
+    needs:
+      - changes
+      - iac
+      - connectivity
+    if: success() || (contains(needs.changes.outputs.components, 'aks') && (needs.iac.result == 'skipped' || needs.connectivity.result == 'skipped'))
+    uses: ./.github/workflows/build_component.yaml

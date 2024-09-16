@@ -1,0 +1,3 @@
+module "tags" {
+  source = "../tags"
+}
