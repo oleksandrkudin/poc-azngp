@@ -60,7 +60,7 @@ function get_changed_files () {
   local git_base_ref=$1
 
   log_verbose "Getting git changed files ..."
-  changed_files=$(git diff-tree --no-commit-id --name-only -r HEAD ${git_base_ref})
+  changed_files=$(git diff-tree --no-commit-id --name-only -r $(git log -1 --format='%H') ${git_base_ref})
   log_verbose $changed_files
  
   echo "$changed_files"  # double quotes to output multi-line string
