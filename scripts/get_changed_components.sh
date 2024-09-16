@@ -1,4 +1,4 @@
-#!bash
+#!/bin/bash
 
 function log_verbose () {
   if [ $VERBOSE -eq 1 ]; then
