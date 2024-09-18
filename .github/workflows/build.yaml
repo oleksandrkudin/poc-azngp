@@ -26,7 +26,7 @@ jobs:
       - name: Get changed components
         id: components
         env:
-          fetch_depth: ${{ github.event_name == 'pull_request' && 0 || 2 }}
+          fetch_depth: ${{ github.event_name == 'pull_request' && '0' || '2' }}
           GIT_BASE_REF: ${{ github.event_name == 'pull_request' && github.base_ref || inputs.GIT_BASE_REF }}
         run: |
           echo "fetch_depth=$fetch_depth"
@@ -34,6 +34,7 @@ jobs:
           chmod +x scripts/get_changed_components.sh
           components=$(scripts/get_changed_components.sh ${GIT_BASE_REF:+--git-base-ref origin/$GIT_BASE_REF} --verbose)
           echo "components=$(jq --compact-output --null-input '$ARGS.positional' --args ${components[@]})" | tee -a "$GITHUB_OUTPUT"
+          exit 1
   iac:
     needs:
       - changes
