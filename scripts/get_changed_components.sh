@@ -1,4 +1,4 @@
-#!bash
+#!/usr/bin/bash
 
 function log_verbose () {
   if [ $VERBOSE -eq 1 ]; then
@@ -57,10 +57,10 @@ function parse_arguments () {
 }
 
 function get_changed_files () {
-  local git_base_ref=$1
+  [ $# -gt 0 ] && local git_base_ref=$1
 
   log_verbose "Getting git changed files ..."
-  changed_files=$(git diff-tree --no-commit-id --name-only -r HEAD ${git_base_ref})
+  changed_files=$(git diff-tree --no-commit-id --name-only -r $(git log -1 --format='%H') ${git_base_ref})
   log_verbose $changed_files
  
   echo "$changed_files"  # double quotes to output multi-line string
