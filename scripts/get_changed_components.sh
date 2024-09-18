@@ -74,7 +74,7 @@ function tracked_items_changed_files_map () {
   declare -g -A tracked_items_changed_files_map  # create global associated array
   for tracked_item in ${!local_tracked_items_path_map[@]}; do
     log_verbose -n "Creating list of $tracked_item that were changed ... "
-    changed_items=$(echo "$changed_files" | sed -rn 's/'${local_tracked_items_path_map[$tracked_item]}'\/(\S+?)\/.*/\1/p')
+    changed_items=$(echo "$changed_files" | sed -rn 's/'${local_tracked_items_path_map[$tracked_item]}'\/([^\/]+)\/.*/\1/p' | uniq)
     log_verbose $changed_items
     tracked_items_changed_files_map[$tracked_item]=$changed_items
   done
