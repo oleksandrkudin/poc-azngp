@@ -74,7 +74,7 @@ function tracked_items_changed_files_map () {
   declare -g -A tracked_items_changed_files_map  # create global associated array
   for tracked_item in ${!local_tracked_items_path_map[@]}; do
     log_verbose -n "Creating list of $tracked_item that were changed ... "
-    changed_items=$(echo "$changed_files" | sed -rn 's/'${local_tracked_items_path_map[$tracked_item]}'\/(\S+?)\/.*/\1/p')
+    changed_items=$(echo "$changed_files" | sed -rn 's/'${local_tracked_items_path_map[$tracked_item]}'\/([^\/]+)\/.*/\1/p' | uniq)
     log_verbose $changed_items
     tracked_items_changed_files_map[$tracked_item]=$changed_items
   done
@@ -119,7 +119,7 @@ function component_changed () {
   local changed_components=$2
 
   log_verbose "Checking if component was changed ..."
-  [[ $component =~ $changed_components ]] && update_component_reason="Component was changed." && return 0 || return 1  
+  [[ -n $changed_components && $changed_components =~ $component ]] && update_component_reason="Component was changed." && return 0 || return 1  
 }
 
 function component_module_changed () {
