@@ -1,12 +1,15 @@
 name: build product
 
 on:
+  pull_request:
+    branches:
+      - main
+  
   workflow_dispatch:
     inputs:
       GIT_BASE_REF:
         description: Merge base branch to compare changes with. By default only single HEAD commit is analysed for changes.
         default: ""
-
 
 jobs:
   changes:
@@ -18,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # At least two commits are required to get changed files from last commit.
-          fetch-depth: ${{ inputs.GIT_BASE_REF == '' && 2 || 0 }}  # TODO: fix when add PR trigger
+          fetch-depth: ${{ (github.event_name == 'pull_request' || inputs.GIT_BASE_REF != '') && 0 || 2 }}
 
       - name: Get changed components
         id: components
@@ -27,7 +30,7 @@ jobs:
         run: |
           chmod +x scripts/get_changed_components.sh
           components=$(scripts/get_changed_components.sh ${GIT_BASE_REF:+--git-base-ref origin/$GIT_BASE_REF} --verbose)
-          echo "components=$(jq --compact-output --null-input '$ARGS.positional' --args ${components[@]})"  | tee -a "$GITHUB_OUTPUT"
+          echo "components=$(jq --compact-output --null-input '$ARGS.positional' --args ${components[@]})" | tee -a "$GITHUB_OUTPUT"
   iac:
     needs:
       - changes
