@@ -119,7 +119,7 @@ function component_changed () {
   local changed_components=$2
 
   log_verbose "Checking if component was changed ..."
-  [[ $component =~ $changed_components ]] && update_component_reason="Component was changed." && return 0 || return 1  
+  [[ -n $changed_components && $changed_components =~ $component ]] && update_component_reason="Component was changed." && return 0 || return 1  
 }
 
 function component_module_changed () {
