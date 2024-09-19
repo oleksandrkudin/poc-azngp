@@ -31,6 +31,13 @@ jobs:
           chmod +x scripts/get_changed_components.sh
           components=$(scripts/get_changed_components.sh ${GIT_BASE_REF:+--git-base-ref origin/$GIT_BASE_REF} --verbose)
           echo "components=$(jq --compact-output --null-input '$ARGS.positional' --args ${components[@]})" | tee -a "$GITHUB_OUTPUT"
+
+  tags:
+    needs:
+      - changes
+    if: contains(needs.changes.outputs.components, 'tags')
+    uses: ./.github/workflows/build_component.yaml
+
   iac:
     needs:
       - changes
@@ -40,15 +47,17 @@ jobs:
   connectivity:
     needs:
       - changes
+      - tags
       - iac
     # Run if needs (dependency) are succedeed or if dependencies are skipped but there are changes in component itself.
-    if: success() || (contains(needs.changes.outputs.components, 'connectivity') && needs.iac.result == 'skipped') 
+    if: success() || (contains(needs.changes.outputs.components, 'connectivity') && (needs.tags.result == 'skipped' || needs.iac.result == 'skipped'))
     uses: ./.github/workflows/build_component.yaml
   
   aks:
     needs:
       - changes
+      - tags
       - iac
       - connectivity
-    if: success() || (contains(needs.changes.outputs.components, 'aks') && (needs.iac.result == 'skipped' || needs.connectivity.result == 'skipped'))
+    if: success() || (contains(needs.changes.outputs.components, 'aks') && (needs.tags.result == 'skipped' || needs.iac.result == 'skipped' || needs.connectivity.result == 'skipped'))
     uses: ./.github/workflows/build_component.yaml
