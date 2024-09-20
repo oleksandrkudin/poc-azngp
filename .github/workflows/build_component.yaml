@@ -2,10 +2,61 @@ name: build component
 
 on:
   workflow_call:
+    inputs:
+      environment:
+        description: "Delivery environment name."
+        type: string
+      component:
+        description: "Сomponent name."
+        type: string  
 
 jobs:
   build:
+    name: build
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}-no-approve
+    env:
+      component: ${{ inputs.component }}
+      ENVIRONMENT: ${{ inputs.environment }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+    defaults:
+      run:
+        working-directory: src/${{ inputs.component }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: ./.github/actions/setup_terraform
+      
+      - name: 'Azure login'
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
       - run: |
-          echo "build"
+          set -e -o pipefail
+          chmod +x ../../scripts/add_terraform_backend_config.sh
+          # az login --service-principal -t $ARM_TENANT_ID -u $ARM_CLIENT_ID --federated-token $ARM_OIDC_TOKEN
+          # az account set -s $ARM_SUBSCRIPTION_ID
+          ../../scripts/add_terraform_backend_config.sh -e $ENVIRONMENT --fallback-to-local
+        name: Generate Terraform backend config
+
+      - run: |
+          terraform init
+        name: Terraform init
+        
+      - run: |
+          terraform validate
+        name: Terraform validate
+
+      - run: |
+          component_conf=$(configurations/environments/${ENVIRONMENT}/${component}.tfvars 2> /dev/null || echo)
+          terraform plan ${component_conf:+-var-file $component_conf} \
+            -var-file ${GITHUB_WORKSPACE}/configurations/global.tfvars \
+            -var-file ${GITHUB_WORKSPACE}/configurations/environments/${ENVIRONMENT}/environment.tfvars
+        name: Terraform plan

@@ -1,4 +1,4 @@
-name: build product
+name: build environment
 
 on:
   pull_request:
@@ -8,8 +8,14 @@ on:
   workflow_dispatch:
     inputs:
       GIT_BASE_REF:
-        description: Merge base branch to compare changes with. By default only single HEAD commit is analysed for changes.
+        description: "Merge base branch to compare changes with. By default only single HEAD commit is analysed for changes."
         default: ""
+      environment:
+        description: "Delivery environment name."
+        default: dev_weu
+
+permissions:
+  id-token: write
 
 jobs:
   changes:
@@ -36,28 +42,37 @@ jobs:
     needs:
       - changes
     if: contains(needs.changes.outputs.components, 'tags')
+    secrets: inherit
     uses: ./.github/workflows/build_component.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      component: "tags"
 
   iac:
     needs:
       - changes
     if: contains(needs.changes.outputs.components, 'iac')
+    secrets: inherit
     uses: ./.github/workflows/build_component.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      component: "iac"
 
   connectivity:
     needs:
       - changes
-      - tags
-      - iac
-    # Run if needs (dependency) are succedeed or if dependencies are skipped but there are changes in component itself.
-    if: success() || (contains(needs.changes.outputs.components, 'connectivity') && (needs.tags.result == 'skipped' || needs.iac.result == 'skipped'))
+    if: contains(needs.changes.outputs.components, 'connectivity')
+    secrets: inherit
     uses: ./.github/workflows/build_component.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      component: "connectivity" 
   
-  aks:
-    needs:
-      - changes
-      - tags
-      - iac
-      - connectivity
-    if: success() || (contains(needs.changes.outputs.components, 'aks') && (needs.tags.result == 'skipped' || needs.iac.result == 'skipped' || needs.connectivity.result == 'skipped'))
-    uses: ./.github/workflows/build_component.yaml
+  # aks:
+  #   needs:
+  #     - changes
+  #   if: contains(needs.changes.outputs.components, 'aks')
+  #   uses: ./.github/workflows/build_component.yaml
+  #   with:
+  #     environment: ${{ inputs.environment }}
+  #     component: "aks"

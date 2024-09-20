@@ -12,5 +12,6 @@ locals {
     container_name       = var.global.terraform_azurerm_backend.container_name
     key                  = "${var.global.product}/${basename(var.component_path)}.terraform.tfstate"
     use_azuread_auth     = true
+    use_oidc             = true
   }
 }
