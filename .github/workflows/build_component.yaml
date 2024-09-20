@@ -55,8 +55,8 @@ jobs:
         name: Terraform validate
 
       - run: |
-          component_conf=$(configurations/environments/${ENVIRONMENT}/${component}.tfvars 2> /dev/null || echo)
+          component_conf=$(ls ../../configurations/environments/${ENVIRONMENT}/${component}.tfvars 2> /dev/null || echo)
           terraform plan ${component_conf:+-var-file $component_conf} \
-            -var-file ${GITHUB_WORKSPACE}/configurations/global.tfvars \
-            -var-file ${GITHUB_WORKSPACE}/configurations/environments/${ENVIRONMENT}/environment.tfvars
+            -var-file ../../configurations/global.tfvars \
+            -var-file ../../configurations/environments/${ENVIRONMENT}/environment.tfvars
         name: Terraform plan
