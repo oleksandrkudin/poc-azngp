@@ -58,15 +58,15 @@ jobs:
       environment: ${{ inputs.environment }}
       component: "iac"
 
-  # connectivity:
-  #   needs:
-  #     - changes
-  #   if: contains(needs.changes.outputs.components, 'connectivity')
-  #   secrets: inherit
-  #   uses: ./.github/workflows/build_component.yaml
-  #   with:
-  #     environment: ${{ inputs.environment }}
-  #     component: "connectivity" 
+  connectivity:
+    needs:
+      - changes
+    if: contains(needs.changes.outputs.components, 'connectivity')
+    secrets: inherit
+    uses: ./.github/workflows/build_component.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      component: "connectivity" 
   
   # aks:
   #   needs:

@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    name: build (${{ inputs.component }})
+    name: build
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}-no-approve
     env:
