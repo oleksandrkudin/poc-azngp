@@ -45,7 +45,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/build_component.yaml
     with:
-      environment: ${{ inputs.environment }}
+      environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev_weu' }}
       component: "tags"
 
   iac:
@@ -55,7 +55,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/build_component.yaml
     with:
-      environment: ${{ inputs.environment }}
+      environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev_weu' }}
       component: "iac"
 
   connectivity:
@@ -65,7 +65,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/build_component.yaml
     with:
-      environment: ${{ inputs.environment }}
+      environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev_weu' }}
       component: "connectivity" 
   
   # aks:
@@ -74,5 +74,5 @@ jobs:
   #   if: contains(needs.changes.outputs.components, 'aks')
   #   uses: ./.github/workflows/build_component.yaml
   #   with:
-  #     environment: ${{ inputs.environment }}
+  #     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev_weu' }}
   #     component: "aks"
