@@ -1,0 +1,138 @@
+name: deploy component
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Delivery environment name."
+        type: string
+      component:
+        description: "Сomponent name."
+        type: string
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}-no-approve
+    env:
+      component: ${{ inputs.component }}
+      ENVIRONMENT: ${{ inputs.environment }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+    defaults:
+      run:
+        working-directory: src/${{ inputs.component }}
+    outputs:
+      deploy_required: ${{ steps.terraform_plan.outputs.deploy_required }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: ./.github/actions/setup_terraform
+      
+      - name: 'Azure login'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Generate Terraform backend config
+        shell: bash
+        run: |
+          set -e -o pipefail
+          chmod +x ../../scripts/add_terraform_backend_config.sh
+          ../../scripts/add_terraform_backend_config.sh -e $ENVIRONMENT --fallback-to-local        
+
+      - name: Terraform init
+        shell: bash
+        run: |
+          terraform init
+
+      - name: Terraform validate
+        shell: bash 
+        run: |
+          terraform validate
+
+      - name: Terraform plan
+        id: terraform_plan
+        shell: bash
+        run: |
+          component_conf=$(ls ../../configurations/environments/${ENVIRONMENT}/${component}.tfvars 2> /dev/null || echo)
+          terraform plan -detailed-exitcode -out terraform.tfplan ${component_conf:+-var-file $component_conf} \
+            -var-file ../../configurations/global.tfvars \
+            -var-file ../../configurations/environments/${ENVIRONMENT}/environment.tfvars
+          
+          terraform_plan_exitcode=$?
+          echo "terraform_plan_exitcode=$terraform_plan_exitcode"
+          if [ $terraform_plan_exitcode -eq 2 ]; then
+            deploy_required=true
+          elif [ $terraform_plan_exitcode -eq 0 ]; then
+            deploy_required=false
+          else
+            exit $terraform_plan_exitcode
+          fi
+          echo "deploy_required=${deploy_required}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Publish Terraform plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.component }}-tfplan
+          path: src/${{ inputs.component }}/terraform.tfplan
+          if-no-files-found: error
+          overwrite: true
+
+  deploy:
+    name: deploy
+    needs: build
+    if: ${{ needs.build.outputs.deploy_required == 'true' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      component: ${{ inputs.component }}
+      ENVIRONMENT: ${{ inputs.environment }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+    defaults:
+      run:
+        working-directory: src/${{ inputs.component }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: ./.github/actions/setup_terraform
+      
+      - name: 'Azure login'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Generate Terraform backend config
+        shell: bash
+        run: |
+          set -e -o pipefail
+          chmod +x ../../scripts/add_terraform_backend_config.sh
+          ../../scripts/add_terraform_backend_config.sh -e $ENVIRONMENT --fallback-to-local        
+
+      - name: Terraform init
+        shell: bash
+        run: |
+          terraform init
+      
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.component }}-tfplan
+          path: src/${{ inputs.component }}
+      
+      - name: Terraform apply plan
+        shell: bash
+        run: |
+          terraform apply terraform.tfplan
