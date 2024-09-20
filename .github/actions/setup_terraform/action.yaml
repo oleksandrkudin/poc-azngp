@@ -19,7 +19,7 @@ runs:
           echo "Installing terraform ..."
           curl -sS -L -O https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip
           ls terraform_${terraform_version}_linux_amd64.zip
-          sudo unzip -uo terraform_${terraform_version}_linux_amd64.zip terraform -d /usr/local/bin
+          sudo unzip -o terraform_${terraform_version}_linux_amd64.zip terraform -d /usr/local/bin
           sudo chmod +x /usr/local/bin/terraform
         else
           echo "terraform already exists."
