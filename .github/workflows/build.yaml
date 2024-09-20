@@ -48,15 +48,15 @@ jobs:
       environment: ${{ inputs.environment }}
       component: "tags"
 
-  # iac:
-  #   needs:
-  #     - changes
-  #   if: contains(needs.changes.outputs.components, 'iac')
-  #   secrets: inherit
-  #   uses: ./.github/workflows/build_component.yaml
-  #   with:
-  #     environment: ${{ inputs.environment }}
-  #     component: "iac"
+  iac:
+    needs:
+      - changes
+    if: contains(needs.changes.outputs.components, 'iac')
+    secrets: inherit
+    uses: ./.github/workflows/build_component.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      component: "iac"
 
   # connectivity:
   #   needs:
