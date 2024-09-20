@@ -38,25 +38,29 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
-      - run: |
+      - name: Generate Terraform backend config
+        shell: bash
+        run: |
           set -e -o pipefail
           chmod +x ../../scripts/add_terraform_backend_config.sh
           # az login --service-principal -t $ARM_TENANT_ID -u $ARM_CLIENT_ID --federated-token $ARM_OIDC_TOKEN
           # az account set -s $ARM_SUBSCRIPTION_ID
           ../../scripts/add_terraform_backend_config.sh -e $ENVIRONMENT --fallback-to-local
-        name: Generate Terraform backend config
 
-      - run: |
+      - name: Terraform init
+        shell: bash
+        run: |
           terraform init
-        name: Terraform init
         
-      - run: |
+      - name: Terraform validate
+        shell: bash
+        run: |
           terraform validate
-        name: Terraform validate
-
-      - run: |
+        
+      - name: Terraform plan
+        shell: bash
+        run: |
           component_conf=$(ls ../../configurations/environments/${ENVIRONMENT}/${component}.tfvars 2> /dev/null || echo)
           terraform plan ${component_conf:+-var-file $component_conf} \
             -var-file ../../configurations/global.tfvars \
             -var-file ../../configurations/environments/${ENVIRONMENT}/environment.tfvars
-        name: Terraform plan
