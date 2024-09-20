@@ -62,11 +62,12 @@ jobs:
         shell: bash
         run: |
           component_conf=$(ls ../../configurations/environments/${ENVIRONMENT}/${component}.tfvars 2> /dev/null || echo)
+          set +e
           terraform plan -detailed-exitcode -out terraform.tfplan ${component_conf:+-var-file $component_conf} \
             -var-file ../../configurations/global.tfvars \
             -var-file ../../configurations/environments/${ENVIRONMENT}/environment.tfvars
-          
           terraform_plan_exitcode=$?
+          set -e
           echo "terraform_plan_exitcode=$terraform_plan_exitcode"
           if [ $terraform_plan_exitcode -eq 2 ]; then
             deploy_required=true
