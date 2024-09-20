@@ -1,0 +1,36 @@
+name: Setup Terraform
+
+inputs:
+  terraform_version:
+    description: "Terraform release version."
+    required: false
+    default: 1.9.6
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Terraform
+      shell: bash
+      env:
+        terraform_version: ${{ inputs.terraform_version }}
+      run: |
+        set -e -o pipefail
+        if [[ ! -f /usr/local/bin/terraform || "$terraform_version" != "$(terraform --version -json | jq --raw-output '.terraform_version')"  ]]; then
+          echo "Installing terraform ..."
+          curl -sS -L -O https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip
+          ls terraform_${terraform_version}_linux_amd64.zip
+          sudo unzip -uo terraform_${terraform_version}_linux_amd64.zip terraform -d /usr/local/bin
+          sudo chmod +x /usr/local/bin/terraform
+        else
+          echo "terraform already exists."
+        fi
+        terraform -v
+    
+    - name: Configure Terraform
+      shell: bash
+      run: |
+        echo "TF_INPUT=false" | tee -a "$GITHUB_ENV"
+        TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+        echo "TF_PLUGIN_CACHE_DIR=$TF_PLUGIN_CACHE_DIR" | tee -a "$GITHUB_ENV"
+        mkdir -p $TF_PLUGIN_CACHE_DIR
+        echo "TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=1" | tee -a "$GITHUB_ENV"
